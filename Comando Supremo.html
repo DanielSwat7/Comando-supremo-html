@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>RTS: Godzilla Storm Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; font-family: 'Courier New', Courier, monospace; color: white; }
+        canvas { display: block; background: #222; }
+        
+        /* UI Estabilizada e Retrátil */
+        #ui-container { position: absolute; top: 10px; right: 10px; width: 250px; pointer-events: none; }
+        .panel { 
+            background: rgba(0, 0, 0, 0.85); border: 1px solid #444; padding: 10px; 
+            margin-bottom: 5px; pointer-events: auto; font-size: 12px;
+        }
+        .header { font-weight: bold; border-bottom: 1px solid #666; margin-bottom: 5px; cursor: pointer; display: flex; justify-content: space-between; }
+        .content { display: block; }
+        .hidden { display: none; }
+        
+        button { background: #333; color: #fff; border: 1px solid #666; width: 100%; margin: 2px 0; cursor: pointer; text-align: left; }
+        button:hover { background: #444; }
+        
+        #mode-selector { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #000; padding: 40px; border: 2px solid red; }
+        .alert { color: #ff0000; font-weight: bold; text-align: center; width: 100%; position: absolute; top: 50px; pointer-events: none; font-size: 20px; text-shadow: 2px 2px #000; }
+    </style>
+</head>
+<body>
+
+<div id="mode-selector">
+    <h1>COMANDO SUPREMO</h1>
+    <button onclick="startGame('normal')" style="padding: 15px; font-size: 18px;">MODO NORMAL (Estabilizado)</button><br><br>
+    <button onclick="startGame('godzilla')" style="padding: 15px; font-size: 18px; color: #ff4444;">MODO GODZILLA STORM</button>
+</div>
+
+<div id="game-ui" style="display:none;">
+    <div id="ui-container">
+        <div class="panel" id="atlas-panel">
+            <div class="header" onclick="togglePanel('atlas-content')"><span>📡 ATLAS</span> <span>[v]</span></div>
+            <div id="atlas-content" class="content">
+                <button onclick="atlasCommand('Reconhecimento')">🧭 Reconhecimento</button>
+                <button onclick="atlasCommand('Estabilidade')">⚖️ Manter Estabilidade</button>
+                <button onclick="atlasCommand('Reposicionar')">🔄 Reposicionar Forças</button>
+                <div id="atlas-log" style="font-style: italic; color: #aaa; margin-top: 5px;">Aguardando...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="header"><span>🛠️ TREINAR UNIDADES</span></div>
+            <button onclick="spawnUnit('Infantaria')">Infantaria (Custo: 50)</button>
+            <button onclick="spawnUnit('Tanque')">Tanque (Custo: 150)</button>
+            <div id="eco-display" style="margin-top:5px; color: #0f0;">Recursos: 200</div>
+        </div>
+
+        <div id="godzilla-panel" class="panel hidden">
+            <div class="header" onclick="togglePanel('godzilla-content')"><span>🐲 COORDENAÇÃO ALIADA</span> <span>[v]</span></div>
+            <div id="godzilla-content" class="content">
+                <button onclick="coordMsg('Produzam Artilharia')">"Produzam Artilharia"</button>
+                <button onclick="coordMsg('Ajuda')">"Preciso de apoio!"</button>
+                <div id="coord-log" style="font-style: italic; color: #0cf;">Status: Aliança Cooperativa</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="global-alert" class="alert"></div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+/** * RTS ENGINE - PATCH FINAL 
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gameState = {
+    mode: 'normal',
+    resources: 200,
+    units: [],
+    buildings: [],
+    boss: null,
+    running: false
+};
+
+// --- CLASSES PRINCIPAIS ---
+class Base {
+    constructor(x, y, team, name) {
+        this.x = x; this.y = y; this.team = team; this.name = name;
+        this.hp = 1000; this.size = 60;
+    }
+    draw() {
+        ctx.fillStyle = this.team === 'Atlas' ? '#444' : (this.team === 'Player' ? '#00f' : '#f00');
+        ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        ctx.fillStyle = "white";
+        ctx.fillText(this.name, this.x - 20, this.y - 40);
+    }
+}
+
+class Unit {
+    constructor(x, y, team, type) {
+        this.x = x; this.y = y; this.team = team; this.type = type;
+        this.targetX = x; this.targetY = y;
+        this.speed = type === 'Infantaria' ? 1.5 : 1.0;
+        this.color = team === 'Player' ? '#55f' : (team === 'Atlas' ? '#888' : '#f55');
+    }
+    update() {
+        let dx = this.targetX - this.x;
+        let dy = this.targetY - this.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist > 5) {
+            this.x += (dx/dist) * this.speed;
+            this.y += (dy/dist) * this.speed;
+        }
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+class Godzilla {
+    constructor() {
+        this.x = -100; this.y = canvas.height / 2;
+        this.hp = 5000; this.maxHp = 5000;
+        this.state = 'normal'; // normal, eletrotérmico
+        this.charge = 0;
+    }
+    update() {
+        if(this.state === 'eletrotérmico') {
+            let target = gameState.buildings[0]; // Foca na base
+            let dx = target.x - this.x; let dy = target.y - this.y;
+            let d = Math.sqrt(dx*dx+dy*dy);
+            this.x += (dx/d) * 0.8; this.y += (dy/d) * 0.8;
+        } else {
+            this.x += 0.3; // Caminha pro centro
+        }
+        
+        if(this.hp < this.maxHp * 0.15 && this.state !== 'eletrotérmico') {
+            this.state = 'eletrotérmico';
+            showAlert("ALERTA: Godzilla Storm entrou em estado eletrotérmico. Defendam as bases.");
+        }
+    }
+    draw() {
+        ctx.fillStyle = this.state === 'eletrotérmico' ? '#0ff' : '#050';
+        ctx.fillRect(this.x-40, this.y-40, 80, 80);
+        // Efeito de carga
+        if(Math.random() > 0.8) {
+            ctx.strokeStyle = "#fff";
+            ctx.beginPath(); ctx.moveTo(this.x, this.y); 
+            ctx.lineTo(this.x + (Math.random()-0.5)*100, this.y + (Math.random()-0.5)*100);
+            ctx.stroke();
+        }
+    }
+}
+
+// --- LOGICA DE JOGO ---
+function startGame(mode) {
+    gameState.mode = mode;
+    gameState.running = true;
+    document.getElementById('mode-selector').style.display = 'none';
+    document.getElementById('game-ui').style.display = 'block';
+    
+    // Inicia Bases (Físicas e Visíveis)
+    gameState.buildings.push(new Base(100, canvas.height/2, 'Player', 'Sua Base'));
+    gameState.buildings.push(new Base(canvas.width - 100, canvas.height/2, 'Atlas', 'Base Atlas'));
+    
+    if(mode === 'godzilla') {
+        gameState.boss = new Godzilla();
+        document.getElementById('godzilla-panel').classList.remove('hidden');
+    }
+    
+    requestAnimationFrame(gameLoop);
+}
+
+function spawnUnit(type) {
+    let cost = type === 'Infantaria' ? 50 : 150;
+    if(gameState.resources >= cost) {
+        gameState.resources -= cost;
+        // Spawn sempre na base (Correção de bug de surgimento)
+        gameState.units.push(new Unit(100, canvas.height/2, 'Player', type));
+        updateUI();
+    }
+}
+
+function atlasCommand(cmd) {
+    const log = document.getElementById('atlas-log');
+    const respostas = [
+        "Atlas está analisando a situação...",
+        "Pedido recebido. Processando prioridades.",
+        "No momento, manteremos a posição atual."
+    ];
+    log.innerText = respostas[Math.floor(Math.random()*respostas.length)];
+}
+
+function coordMsg(msg) {
+    const log = document.getElementById('coord-log');
+    log.innerText = "IA Aliada: Entendido. Iniciando " + msg;
+}
+
+function togglePanel(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+
+function showAlert(txt) {
+    const el = document.getElementById('global-alert');
+    el.innerText = txt;
+    setTimeout(() => el.innerText = "", 5000);
+}
+
+function updateUI() {
+    document.getElementById('eco-display').innerText = `Recursos: ${gameState.resources}`;
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Renderiza Bases
+    gameState.buildings.forEach(b => b.draw());
+    
+    // Renderiza e move Unidades (Movimento em grupo estabilizado)
+    gameState.units.forEach(u => {
+        u.update();
+        u.draw();
+    });
+    
+    if(gameState.boss) {
+        gameState.boss.update();
+        gameState.boss.draw();
+    }
+
+    if(gameState.running) {
+        // Ganho passivo de recursos
+        if(Math.random() > 0.99) { gameState.resources += 5; updateUI(); }
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// Clique para mover unidades (Grupo)
+canvas.addEventListener('click', (e) => {
+    gameState.units.forEach(u => {
+        if(u.team === 'Player') {
+            u.targetX = e.clientX + (Math.random()*20 - 10);
+            u.targetY = e.clientY + (Math.random()*20 - 10);
+        }
+    });
+});
+</script>
+</body>
+</html>
