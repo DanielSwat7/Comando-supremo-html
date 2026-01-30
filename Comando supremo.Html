@@ -1,0 +1,151 @@
+PROMPT — COMANDO SUPREMO (PATCH + NOVO MODO)
+Você é um programador experiente de jogos RTS (inspirado em Art of War 3 – mobile).
+Implemente APENAS o que está descrito abaixo.
+❌ Não inventar mecânicas
+❌ Não simplificar requisitos
+❌ Não remover sistemas existentes
+❌ Não reescrever o jogo do zero
+❌ Não entregar apenas trechos de código
+⚠️ ENTREGAR O ARQUIVO FINAL JOGÁVEL
+⚠️ Caso não seja entregue o arquivo final funcional, o trabalho será considerado incompleto.
+🎯 OBJETIVO GERAL
+Corrigir bugs críticos do jogo atual
+Estabilizar UI, tropas e Atlas
+Adicionar um NOVO MODO DE JOGO SEPARADO chamado Godzilla Storm
+🔧 PARTE 1 — CORREÇÕES CRÍTICAS (PRIORIDADE ABSOLUTA)
+1️⃣ Movimento em grupo (BUG CRÍTICO)
+Unidades em grupo:
+nunca somem
+nunca ficam invisíveis
+nunca demoram indefinidamente
+Todas:
+aparecem no mapa
+seguem caminho compartilhado
+chegam ao destino
+Renderização contínua durante deslocamento
+2️⃣ Base física da Coalizão Atlas
+A base do Atlas DEVE:
+existir fisicamente
+ser visível
+estar dentro da área jogável
+não ser capturável
+Tropas do Atlas:
+saem da base
+caminham pelo mapa
+nunca surgem “do nada”
+3️⃣ Origem das unidades
+TODAS as tropas:
+têm ponto físico de spawn
+aparecem no mapa
+respeitam deslocamento visível
+4️⃣ UI e UX
+Corrigir:
+painel do Atlas cobrindo o mapa
+Painel do Atlas:
+retrátil (mostrar / esconder)
+discreto
+Painel de treino:
+sempre visível
+mostra claramente cada tropa
+mostra custo das tropas
+Regra: ❌ Nunca mostrar números em diplomacia
+✅ Economia pode usar números
+🧠 PARTE 2 — EXPANSÃO DO SISTEMA ATLAS
+Adicionar novos comandos narrativos:
+🧭 Reconhecimento
+⚖️ Manter Estabilidade
+🔄 Reposicionar Forças
+Regras:
+Atlas tem vontade própria
+Pode recusar pedidos
+Respostas sempre narrativas
+Sem números
+Mensagens claras e explicativas
+🎮 PARTE 3 — NOVO MODO DE JOGO (SEPARADO)
+Nome do modo (temporário):
+Godzilla Storm
+⚠️ Este modo NÃO altera o jogo normal.
+🐲 MODO GODZILLA STORM — REGRAS
+Ativação
+Escolhido no menu
+Nunca aparece no modo normal
+Regra central
+Todas as facções tornam-se aliadas obrigatórias
+PvP desativado
+Captura entre facções desativada
+Cooperação forçada até o fim da partida
+Boss: Godzilla Storm
+Surge ao iniciar a partida
+Atravessa o centro do mapa
+Incendeia o terreno
+Extremamente resistente
+Não pertence a nenhuma facção
+⚡ HABILIDADE — BAFORADA DE RAIO
+Ataque principal
+Tipo: raio elétrico concentrado
+Cooldown longo
+Antes de disparar:
+carregamento visual elétrico
+efeito sonoro de raio
+Ataque sempre telegráfico
+Grande área de destruição
+🐉 HABILIDADE — INVOCAÇÃO
+Invoca criaturas auxiliares:
+aéreas rápidas (inspiradas em Rodans)
+terrestres em enxame (inspiradas em Meganulons)
+⚠️ ESTADO FINAL — ELETROTÉRMICO (15% DE VIDA)
+Quando o boss atinge 15% da vida:
+Entra em estado eletrotérmico
+Brilho elétrico intenso
+Sons constantes de energia
+Escolhe UMA base aleatória
+Avança diretamente para destruí-la
+Ignora desvios
+Mensagem global obrigatória:
+“ALERTA: Godzilla Storm entrou em estado eletrotérmico. Defendam as bases.”
+🏁 CONDIÇÃO DE VITÓRIA
+Godzilla Storm derrotado:
+partida termina imediatamente
+todos vencem
+tela final narrativa
+🎮 PARTE 4 — PAINEL DE COORDENAÇÃO (EXCLUSIVO DO GODZILLA STORM)
+Adicionar painel exclusivo para coordenação entre IAs aliadas.
+Requisitos
+Painel retrátil
+Discreto
+Textual
+Sem números
+Não existe no modo normal
+Não controla unidades diretamente
+Comandos de produção
+“Produzam Infantaria”
+“Produzam Aviões”
+“Produzam Artilharia”
+“Produzam Defesas”
+“Produzam Engenheiros”
+Declarações do jogador
+“Eu focarei em Defesas”
+“Eu focarei em Veículos Pesados”
+“Eu focarei em Apoio Aéreo”
+Pedidos de ajuda
+“Preciso de apoio imediato”
+“Minha base está comprometida”
+“Precisamos de cobertura aérea”
+Comportamento da IA
+Avalia pedidos
+Pode aceitar, atrasar ou recusar
+Nunca obedece cegamente
+Respostas sempre narrativas
+Sem números
+📦 ENTREGA FINAL
+Gerar UM ARQUIVO FINAL FUNCIONAL
+Código completo
+Pronto para abrir no navegador
+Nenhuma dependência quebrada
+Não encerrar sem o arquivo jogável
+⚠️ REGRA DE OURO FINAL
+Este patch tem DOIS objetivos apenas:
+Estabilizar o jogo existente
+Adicionar o modo Godzilla Storm como modo separado
+❌ Não expandir além disso
+❌ Não modificar o modo normal
